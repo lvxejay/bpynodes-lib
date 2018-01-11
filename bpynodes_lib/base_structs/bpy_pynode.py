@@ -10,8 +10,8 @@
     Currently unused, but module was included to be later expanded and implemented
 
 :description:
-    This module contains the MaterialXNode class definition. 
-    The class has a set of of both private and public methods.
+    This module contains Base Python Node class definitions. 
+    The classes have a set of of both private and public methods.
     Private methods generally are not overwritten in any subclasses and are used for
      utility purposes
     Most public methods may be overwritten in subclasses and are listed under the 
@@ -23,7 +23,7 @@
     Blender 3D
 
 :see_also:
-   ./base_socket.py
+   ./bpy_pynode_socket.py
 
 :license:
     see license.txt and EULA.txt 
