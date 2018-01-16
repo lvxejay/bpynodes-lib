@@ -174,6 +174,9 @@ class CustomBlenderNode(object):
         """Draw function"""
         pass
 
+    def reset(self):
+        pass
+
     '''Private functions. Here for convenience when subclassing'''
 
     def _value_set(self, obj, path, value):
@@ -232,14 +235,16 @@ class CustomBlenderNode(object):
         """Clears all input sockets. Calls socket's free()
             and then removes all input sockets with inputs.clear()."""
         for socket in self.inputs:
-            socket.free()
+            if hasattr(socket, 'free'):
+                socket.free()
         self.inputs.clear()
 
     def _clear_outputs(self):
         """Clears all output sockets. Calls socket's free()
             and then removes all output sockets with outputs.clear()."""
         for socket in self.outputs:
-            socket.free()
+            if hasattr(socket, 'free'):
+                socket.free()
         self.outputs.clear()
 
     def _remove_socket(self, socket):
@@ -260,6 +265,8 @@ class CustomBlenderNode(object):
         :return: 
         """
         for key, value in properties.items():
+            if not hasattr(socket, key):
+                continue
             if key == 'link_limit':
                 if hasattr(socket, '_is_list'):
                     setattr(socket, key, value)
@@ -324,6 +331,9 @@ class CustomBlenderNodeGroup(CustomBlenderNode):
     _node_tree_name = None
     _node_tree_type = None
     _node_tree_ext = None
+    _node_list = []
+    _socket_interface = []
+    _node_map = []
 
     def _new_input(self, type, name, **kwargs):
         """
@@ -353,6 +363,32 @@ class CustomBlenderNodeGroup(CustomBlenderNode):
         self._set_socket_properties(socket, kwargs)
         return socket
 
+
+    @property
+    def node_list(self):
+        return self._node_list
+
+    @node_list.setter
+    def node_list(self, node_list):
+        self._node_list = node_list
+
+    @property
+    def socket_interface(self):
+        return self._socket_interface
+
+    @socket_interface.setter
+    def socket_interface(self, interface):
+        self._socket_interface = interface
+
+    @property
+    def node_map(self):
+        return self._node_map
+
+    @node_map.setter
+    def node_map(self, node_map):
+        self._node_map = node_map
+
+
     @property
     def node_tree(self):
         """
@@ -362,15 +398,18 @@ class CustomBlenderNodeGroup(CustomBlenderNode):
         :return: Blender Node Tree
         :rtype: bpy.types.NodeTree(ID)
         """
-        node_tree_name = self._node_tree_name  # check the node tree name
-        node_tree_type = self._node_tree_type  # check the node tree type
+        node_tree_name = self.node_tree_name  # check the node tree name
+        node_tree_type = self.node_tree_type  # check the node tree type
         if node_tree_name is not None:
             # Lookup or Create the Node Tree
             if bpy.data.node_groups.find(node_tree_name) != -1:  # node tree exists
+                IO.debug("@node_tree called. Found the node tree.")
                 return bpy.data.node_groups[str(node_tree_name)]  # return from BlendData
             else:  # create & return Node Tree
+                IO.debug("@node_tree called. Creating new node Tree")
                 return bpy.data.node_groups.new(str(node_tree_name), str(node_tree_type))
         else:
+            # return None
             raise LookupError(
                 "Private attribute '_node_tree_name' is undefined or NoneType.\n"
                 "Unable to lookup or create Node Tree in BlendData.\n"
@@ -439,22 +478,8 @@ class CustomCyclesGroup(CustomBlenderNodeGroup):
         Setup Node Tree for this Group
         :return: 
         """
-        self.get_node_group_tree(self.node_tree_name)
-
-    def get_node_group_tree(self, node_tree_name):
-        """Search for the node tree we want to instantiate"""
-
-        if bpy.data.node_groups.find(node_tree_name) == -1:  # node_tree name not found
-            self.create_node_tree(node_tree_name, self.node_dict)
-        return self.node_tree
-
-    def create_node_tree(self, node_tree_name, node_dict):
-        """Create the node tree we are instantiating into the Node Group"""
-
         pass
-        # Create Nodes
-        # Create Sockets
-        # Create Links
+
 
     def add_node(self, node_type, attrs):
         node = self.node_tree.nodes.new(node_type)
@@ -463,30 +488,77 @@ class CustomCyclesGroup(CustomBlenderNodeGroup):
                 self._value_set(node, attr, attrs[attr])
         return node
 
+
     def get_node(self, node_name):
         if self.node_tree.nodes.find(node_name) > -1:
             return self.node_tree.nodes[node_name]
         return None
 
+
     def add_socket(self, in_out, socket_type, name):
         # for now duplicated socket names are not allowed
+
         if in_out == 'Output':
             if self.node_tree.nodes['group_output'].inputs.find(name) == -1:
                 socket = self.node_tree.outputs.new(socket_type, name)
         elif in_out == 'Input':
             if self.node_tree.nodes['group_input'].outputs.find(name) == -1:
                 socket = self.node_tree.inputs.new(socket_type, name)
-        return socket
+
 
     def inner_link(self, in_socket, out_socket):
         IS = self.node_tree.path_resolve(in_socket)
         OS = self.node_tree.path_resolve(out_socket)
         self.node_tree.links.new(IS, OS)
 
-    def free(self):
-        if self.node_tree.users == 1:
-            bpy.data.node_groups.remove(self.node_tree, do_unlink=True)
 
+    def free(self):
+        """Clean up node on removal"""
+        self.reset()
+        self._clear()
+        self.delete()
+
+
+    def delete(self):
+        IO.info("Deleting Node")
+        node_tree = self.node_tree
+        bpy.data.node_groups.remove(node_tree, do_unlink=True)
+        self.node_tree = None
+
+
+    def _clear(self):
+        """Clears all data on this node."""
+        self._clear_sockets()
+        self._clear_nodes()
+
+    def _clear_nodes(self):
+        node_tree = self.node_tree
+        node_tree.nodes.clear()
+
+    def _clear_sockets(self):
+        """Clears all input and output sockets"""
+        self._clear_inputs()
+        self._clear_outputs()
+
+    def _clear_inputs(self):
+        """Clears all input sockets. Calls socket's free()
+            and then removes all input sockets with inputs.clear()."""
+        for socket in self.inputs:
+            if hasattr(socket, 'free'):
+                socket.free()
+        self.inputs.clear()
+        node_tree = self.node_tree
+        node_tree.inputs.clear()
+
+    def _clear_outputs(self):
+        """Clears all output sockets. Calls socket's free()
+            and then removes all output sockets with outputs.clear()."""
+        for socket in self.outputs:
+            if hasattr(socket, 'free'):
+                socket.free()
+        self.outputs.clear()
+        node_tree = self.node_tree
+        node_tree.outputs.clear()
 
 
 

@@ -58,6 +58,8 @@ def get_node_tree(socket):
     """Returns the node tree this socket's node is in"""
     return socket.node.id_data
 
+def is_socket_unlinked(socket):
+    return not socket.is_linked
 
 def get_socket_index(socket, node=None):
     """Returns an index of the current socket"""
@@ -66,10 +68,17 @@ def get_socket_index(socket, node=None):
         return list(node.outputs).index(socket)
     return list(node.inputs).index(socket)
 
-
-def is_mtlx_node_socket(socket):
-    """Returns declared variable as True or False, and sets to False by default"""
-    return getattr(socket, "_is_mtlx_node_socket", False)
+def get_node_link(socket):
+    nlink = ''
+    node_tree = socket.get_node_tree()
+    link_list = node_tree.links
+    for nodelink in link_list:
+        if nodelink.to_socket.identifier == socket.identifier:
+            socket_index = nodelink.from_socket.get_socket_index
+            nlink = (nodelink.from_node.name,
+                     nodelink.from_socket.identifier,
+                     socket_index())
+    return nlink
 
 
 # ---------------------------------------------------------------------------------------#
@@ -79,7 +88,7 @@ class CustomBlenderSocket(object):
 
     # Class Variables that all subclasses inherit
     text = StringProperty(default="Socket Name")
-    display_property = BoolProperty(default=False)
+    display_property = BoolProperty(default=True)
 
     @classmethod
     def has_property(cls):
@@ -114,8 +123,8 @@ class CustomBlenderSocket(object):
 
     '''Define these functions in subclass'''
 
-    def draw_color(self, context, node):
-        raise NotImplementedError("All sockets have to define a draw_color method")
+    # def draw_color(self, context, node):
+    #     raise NotImplementedError("All sockets have to define a draw_color method")
 
     def draw_property(self, layout, text, node):
         pass
@@ -261,27 +270,12 @@ class CustomBlenderSocket(object):
         return str(hash(self)) + self.identifier
 
 
-
-
-def get_node_link(socket):
-    nlink = ''
-    node_tree = socket.get_node_tree()
-    link_list = node_tree.links
-    for nodelink in link_list:
-        if nodelink.to_socket.identifier == socket.identifier:
-            socket_index = nodelink.from_socket.get_socket_index
-            nlink = (nodelink.from_node.name,
-                     nodelink.from_socket.identifier,
-                     socket_index())
-    return nlink
-
-
 def register():
     """Blender's register. Extends bpy.types classes with new properties and funcs."""
     bpy.types.NodeSocket.to_socket_id = to_socket_id
     bpy.types.NodeSocket.get_node_tree = get_node_tree
     bpy.types.NodeSocket.get_socket_index = get_socket_index
-
+    bpy.types.NodeSocket.is_socket_unlinked = is_socket_unlinked
     bpy.types.NodeSocket.socket_id = StringProperty()
     bpy.types.NodeSocket.get_linked_node = get_node_link
 
@@ -291,5 +285,6 @@ def unregister():
     del bpy.types.NodeSocket.to_socket_id
     del bpy.types.NodeSocket.get_socket_index
     del bpy.types.NodeSocket.get_node_tree
+    del bpy.types.NodeSocket.is_socket_unlinked
     del bpy.types.NodeSocket.socket_id
     del bpy.types.NodeSocket.get_linked_node

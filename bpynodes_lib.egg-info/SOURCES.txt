@@ -14,4 +14,5 @@ bpynodes_lib/utils/__init__.py
 bpynodes_lib/utils/developer_utils.py
 bpynodes_lib/utils/dynamic_props.py
 bpynodes_lib/utils/enum_items.py
+bpynodes_lib/utils/extend_bpy_types.py
 bpynodes_lib/utils/io.py
