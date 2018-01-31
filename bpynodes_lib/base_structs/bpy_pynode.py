@@ -45,6 +45,7 @@ except ImportError:
 
 # ---------------------------------------------------------------------------------------#
 # -------------------------------------------------------------------------- FUNCTIONS --#
+
 def create_identifier():
     """Creates a random identifier string."""
     identifierLength = 15
@@ -78,12 +79,11 @@ def get_sockets(node):
     """Returns a joined list of input and output sockets for the passed in node"""
     return list(node.inputs) + list(node.outputs)
 
-
-
 # ---------------------------------------------------------------------------------------#
 # ---------------------------------------------------------------------------- CLASSES --#
 
 class CustomBlenderNode(object):
+
     # Class Properties
     # Width, Max/Min
     bl_width_min = 40
@@ -112,67 +112,83 @@ class CustomBlenderNode(object):
         except ImportError:
             IO.error("Unable to import nodeitems_utils. Make sure you are in a BPY environment")
 
+
     def init(self, context):
         """Initialize a new instance of this node. Sets identifier to a random string."""
         self.identifier = create_identifier()
         self.setup()
         self.create()
 
+
     def update(self):
         """Update on editor changes. DO NOT USE"""
         pass
+
 
     def free(self):
         """Clean up node on removal"""
         self._clear()
         self.delete()
 
+
     def copy(self, source_node):
         """Initialize a new instance of this node from an existing node."""
         self.identifier = create_identifier()
         self.duplicate(source_node)
 
+
     def draw_buttons(self, context, layout):
         """Draws buttons on the node"""
         self.draw(layout)
+
 
     def draw_label(self):
         """Draws the node label. Should just return the bl_label set in subclass"""
         return self.bl_label
 
+
     '''Functions subclasses can override'''
+
 
     def duplicate(self, source_node):
         """Called when duplicating the node"""
         pass
 
+
     def edit(self):
         """Called when the node is edited"""
         pass
+
 
     def save(self):
         """Function to handle saving node properties when file is saved"""
         pass
 
+
     def create(self):
         """Function to create this node, called by init()"""
         pass
+
 
     def setup(self):
         """Function to setup this node, called by init(), before create()"""
         pass
 
+
     def remove(self):
         """Function to remove this node from it's node tree"""
         self.node_tree.nodes.remove(self)
+
 
     def delete(self):
         """Helper function for after this node has been deleted/removed"""
         pass
 
+
     def draw(self, layout):
         """Draw function"""
         pass
+
 
     def reset(self):
         pass
@@ -187,6 +203,7 @@ class CustomBlenderNode(object):
             prop = obj
             path_attr = path
         setattr(prop, path_attr, value)
+
 
     def _new_input(self, type, name, identifier=None, **kwargs):
         """
@@ -205,6 +222,7 @@ class CustomBlenderNode(object):
         self._set_socket_properties(socket, kwargs)
         return socket
 
+
     def _new_output(self, type, name, identifier=None, **kwargs):
         """
         Create's a new output socket.
@@ -222,14 +240,17 @@ class CustomBlenderNode(object):
         self._set_socket_properties(socket, kwargs)
         return socket
 
+
     def _clear(self):
         """Clears all data on this node."""
         self._clear_sockets()
+
 
     def _clear_sockets(self):
         """Clears all input and output sockets"""
         self._clear_inputs()
         self._clear_outputs()
+
 
     def _clear_inputs(self):
         """Clears all input sockets. Calls socket's free()
@@ -239,6 +260,7 @@ class CustomBlenderNode(object):
                 socket.free()
         self.inputs.clear()
 
+
     def _clear_outputs(self):
         """Clears all output sockets. Calls socket's free()
             and then removes all output sockets with outputs.clear()."""
@@ -246,6 +268,7 @@ class CustomBlenderNode(object):
             if hasattr(socket, 'free'):
                 socket.free()
         self.outputs.clear()
+
 
     def _remove_socket(self, socket):
         """Removes any node socket by checking it's index and decrementing
@@ -256,6 +279,7 @@ class CustomBlenderNode(object):
         else:
             if index < self.active_input: self.active_input -= 1
         socket.sockets.remove(socket)
+
 
     def _set_socket_properties(self, socket, properties):
         """
@@ -275,35 +299,40 @@ class CustomBlenderNode(object):
 
     '''Node Properties. Do not override unless absolutely necessary'''
 
-    @property
-    def node_tree(self):
-        """Returrns the ID Datablock of this node's current NodeTree."""
-        return self.id_data
+    # @property
+    # def node_tree(self):
+    #     """Returrns the ID Datablock of this node's current NodeTree."""
+    #     return self.id_data
+    #
+    # @node_tree.setter
+    # def node_tree(self, bpy_data_node_tree):
+    #     pass
 
-    @node_tree.setter
-    def node_tree(self, bpy_data_node_tree):
-        pass
 
     @property
     def inputs_by_id(self):
         """Returns all identifiers for this node's input sockets."""
         return {socket.identifier: socket for socket in self.inputs}
 
+
     @property
     def outputs_by_id(self):
         """Returns all identifiers for this node's output sockets."""
         return {socket.identifier: socket for socket in self.outputs}
+
 
     @property
     def sockets(self):
         """Returns a joined list of this node's input+output sockets."""
         return list(self.inputs) + list(self.outputs)
 
+
     @property
     def active_input_socket(self):
         """Returns the currently active input socket's index."""
         if len(self.inputs) == 0: return None
         return self.inputs[self.active_input]
+
 
     @property
     def active_output_socket(self):
@@ -327,6 +356,7 @@ class CustomBlenderNodeGroup(CustomBlenderNode):
     Sublcasses CustomBlenderNode for access to typical node methods/attributes
     Defines and Extends access to Node Tree information
     """
+
     _node_tree = None
     _node_tree_name = None
     _node_tree_type = None
@@ -334,6 +364,7 @@ class CustomBlenderNodeGroup(CustomBlenderNode):
     _node_list = []
     _socket_interface = []
     _node_map = []
+
 
     def _new_input(self, type, name, **kwargs):
         """
@@ -348,6 +379,7 @@ class CustomBlenderNodeGroup(CustomBlenderNode):
         socket = self.inputs.new(type, name)
         self._set_socket_properties(socket, kwargs)
         return socket
+
 
     def _new_output(self, type, name, **kwargs):
         """
@@ -372,6 +404,7 @@ class CustomBlenderNodeGroup(CustomBlenderNode):
     def node_list(self, node_list):
         self._node_list = node_list
 
+
     @property
     def socket_interface(self):
         return self._socket_interface
@@ -379,6 +412,7 @@ class CustomBlenderNodeGroup(CustomBlenderNode):
     @socket_interface.setter
     def socket_interface(self, interface):
         self._socket_interface = interface
+
 
     @property
     def node_map(self):
@@ -398,6 +432,7 @@ class CustomBlenderNodeGroup(CustomBlenderNode):
         :return: Blender Node Tree
         :rtype: bpy.types.NodeTree(ID)
         """
+
         node_tree_name = self.node_tree_name  # check the node tree name
         node_tree_type = self.node_tree_type  # check the node tree type
         if node_tree_name is not None:
@@ -423,6 +458,7 @@ class CustomBlenderNodeGroup(CustomBlenderNode):
         """
         self._node_tree = bpy_data_node_tree
 
+
     @property
     def node_tree_name(self):
         """The Node Tree Name in the pattern '_node_tree_name._node_tree_extension'. """
@@ -435,7 +471,8 @@ class CustomBlenderNodeGroup(CustomBlenderNode):
     @node_tree_name.setter
     def node_tree_name(self, name):
         """Set the _node_tree_name private class attribute to name argument"""
-        self._node_tree_name = str(name)
+        self._node_tree_name = name
+
 
     @property
     def node_tree_type(self):
@@ -447,7 +484,8 @@ class CustomBlenderNodeGroup(CustomBlenderNode):
     @node_tree_type.setter
     def node_tree_type(self, tree_type):
         """Set the _node_tree_type private class attribute to tree_type"""
-        self._node_tree_type = str(tree_type)
+        self._node_tree_type = tree_type
+
 
     @property
     def node_tree_ext(self):
@@ -459,19 +497,22 @@ class CustomBlenderNodeGroup(CustomBlenderNode):
     @node_tree_ext.setter
     def node_tree_ext(self, ext_type):
         """Set the Node Tree Extension string to ext_type"""
-        self._node_tree_ext = str(ext_type)
+        self._node_tree_ext = ext_type
 
 
 class CustomCyclesGroup(CustomBlenderNodeGroup):
     _is_custom_cycles_node = True
+
 
     @classmethod
     def poll(cls, ntree):
         """Determines if this node can be created in the current node tree."""
         return ntree.bl_idname == 'ShaderNodeTree'
 
-    def init(self, context):
-        self.create()
+
+    # def init(self, context):
+    #     self.create()
+
 
     def create(self):
         """
@@ -514,31 +555,32 @@ class CustomCyclesGroup(CustomBlenderNodeGroup):
 
     def free(self):
         """Clean up node on removal"""
-        self.reset()
         self._clear()
+        self.reset()
         self.delete()
 
 
     def delete(self):
         IO.info("Deleting Node")
-        node_tree = self.node_tree
-        bpy.data.node_groups.remove(node_tree, do_unlink=True)
-        self.node_tree = None
 
 
     def _clear(self):
         """Clears all data on this node."""
+        IO.info("Clearing Sockets and Nodes")
         self._clear_sockets()
         self._clear_nodes()
+
 
     def _clear_nodes(self):
         node_tree = self.node_tree
         node_tree.nodes.clear()
 
+
     def _clear_sockets(self):
         """Clears all input and output sockets"""
         self._clear_inputs()
         self._clear_outputs()
+
 
     def _clear_inputs(self):
         """Clears all input sockets. Calls socket's free()
@@ -549,6 +591,7 @@ class CustomCyclesGroup(CustomBlenderNodeGroup):
         self.inputs.clear()
         node_tree = self.node_tree
         node_tree.inputs.clear()
+
 
     def _clear_outputs(self):
         """Clears all output sockets. Calls socket's free()
@@ -577,17 +620,15 @@ def register():
         name="Output Node",
         get=is_output_node
     )
+
     bpy.types.Node.get_node_tree = get_node_tree
     bpy.types.Node.get_sockets = get_sockets
 
 
 def unregister():
     """Blender's unregister function. Removes methods and classes from Blender"""
+
     del bpy.types.Node.get_sockets
     del bpy.types.Node.get_node_tree
     del bpy.types.Node.is_output_node
     del bpy.types.Node.is_custom_cycles_node
-
-
-
-
