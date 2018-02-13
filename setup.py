@@ -1,9 +1,9 @@
 from setuptools import setup, find_packages
 
 setup(name='bpynodes_lib',
-      version='1.0.2',
+      version='1.0.3',
       description='Blender Python Nodes extension that provides a python library for creating Python Node systems',
-      url='https://gitlab.com/blenderone/bpynodes_lib1',
+      url='https://gitlab.com/blenderone/bpynodes_lib',
       author='Jared Webber',
       author_email='info@onelvxe.com',
       license='GNU GPLv3',

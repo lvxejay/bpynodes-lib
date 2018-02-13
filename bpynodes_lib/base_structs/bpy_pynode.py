@@ -307,7 +307,17 @@ class CustomBlenderNode(object):
     # @node_tree.setter
     # def node_tree(self, bpy_data_node_tree):
     #     pass
-
+    def _get_connected_node(self, socket, execute=False):
+        IO.info("Getting node connected to %s" % self.name)
+        node_tree = self.get_node_tree()
+        for link in node_tree.links:
+            if link.to_socket.name == socket.name:
+                from_node, from_socket = link.from_node, link.from_socket
+                if execute is True:
+                    node_tree.nodes.active = from_node
+                    from_node.execute()
+                    node_tree.nodes.active = self
+                return from_node, from_socket
 
     @property
     def inputs_by_id(self):
